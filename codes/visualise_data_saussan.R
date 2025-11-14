@@ -1,3 +1,8 @@
+library(tidyverse)
+library(sf)
+library(terra)
+library(readxl)
+
 saussan <- read_excel("/home/ptaconet/contributions_diverses_projets_mivegec/vectrap/entomo_data/eid_Data Saussan/Saussan 22 - data EID - BGS - 03_10_2025_Taconet.xlsx")
 saussan$male = as.numeric(saussan$male)
 saussan$femelle = as.numeric(saussan$femelle)
