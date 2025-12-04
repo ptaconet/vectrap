@@ -28,12 +28,13 @@ df <- df %>%
 
 
 df <- df %>%
-  filter(modality=="C"|period=="Pré traitement", species == "Aedes albopictus")
+  filter(modality=="C", species == "Aedes albopictus") %>%
+  filter(blocks %in% c(1,4,6,7))
 
 
-ggplot(df %>% filter(blocks %in% c(1,4,6,7)), aes(x = reorder(trap_code,effectif_jour,na.rm = TRUE), y = effectif_jour)) +
+ggplot(df %>% filter(blocks %in% c(1,4,6,7)), aes(x = reorder(trap_code,effectif_jour, FUN = median,na.rm = TRUE), y = effectif_jour)) +
   geom_boxplot() +
-  facet_wrap(.~Year, scales = "free_x") +
+  #facet_wrap(.~Year, scales = "free_x") +
   ggtitle("abundance per trap") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   ylim(c(0,75))
@@ -41,8 +42,8 @@ ggplot(df %>% filter(blocks %in% c(1,4,6,7)), aes(x = reorder(trap_code,effectif
 
 df %>%
   group_by(Site, week, blocks) %>%
-  summarise(number_female=mean(number_female, na.rm = T)) %>%
-  ggplot(aes(x = week, y = number_female)) +
+  summarise(effectif_jour=mean(effectif_jour, na.rm = T)) %>%
+  ggplot(aes(x = week, y = effectif_jour)) +
   facet_wrap(.~blocks) +
   geom_line() +
   #geom_smooth(method = "gam", se = F) +

@@ -33,3 +33,4 @@ shapes <- lapply(pcrs_avaloirs, function(path) {
 merged_pcrs_avaloirs <- do.call(rbind, shapes)
 
 st_write(merged_pcrs_avaloirs,"data/MMM_MMM_PCRS_SHP/merged_pcrs_avaloirs.gpkg")
+
