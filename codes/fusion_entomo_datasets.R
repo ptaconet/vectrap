@@ -212,8 +212,8 @@ df_restalboc <- read.csv("entomo_data/altopictus_restalboc/datatot2.csv", sep = 
 ## bind all
 ##########################################
 
-data_mosquitoes <- rbind(df_vectrap, saussan, saussan_fabregues_pignan, df_montpellier, df_restalboc)
-trap_coordinates <- rbind(pieges_loc_vectrap_sf, pieges_loc_saussan_sf, pieges_loc_saussanFabPig_sf, pieges_loc_mtp_sf, df_restalboc_sf)
+data_mosquitoes <- rbind(df_vectrap, saussan, saussan_fabregues_pignan)
+trap_coordinates <- rbind(pieges_loc_vectrap_sf, pieges_loc_saussan_sf, pieges_loc_saussanFabPig_sf)
 
 write.csv(data_mosquitoes,"entomo_data/fusion_data/data_mosquitoes.csv")
 st_write(trap_coordinates,"entomo_data/fusion_data/trap_coordinates.gpkg", overwrite = T,append=FALSE )

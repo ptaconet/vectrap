@@ -12,3 +12,18 @@ mnh_vegetation <- mask(x = mnh, mask = vegetation)
 writeRaster(mnh_vegetation,"data/lidar_hd/merged_lidar_mosaic_vegetation.tif")
 mnh_bati <- mask(x = mnh, mask = bati)
 writeRaster(mnh_bati,"data/lidar_hd/merged_lidar_mosaic_bati.tif")
+
+
+## reclassify to have 3 classes
+r <- rast("data/lidar_hd/merged_lidar_mosaic_vegetation.tif")
+
+breaks <- c(-1, 0.3, 2.5, 100)
+r_reclass <- classify(r, breaks, include.lowest=TRUE)
+writeRaster(r_reclass,"data/lidar_hd/merged_lidar_mosaic_vegetation_classified.tif")
+# vectorize
+# p <- as.polygons(x)
+# p$breaks <- breaks[-1]
+# p$ID <- 1:nrow(p)
+# writeVector(p,"data/lidar_hd/test_classified_veget.gpkg")
+
+

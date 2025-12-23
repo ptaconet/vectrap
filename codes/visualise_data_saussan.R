@@ -15,12 +15,20 @@ saussan2 = saussan %>%
   mutate(week = week(relevé)) %>%
   mutate(piege = as.factor(piege))
 
-
-ggplot(saussan2,aes(x = reorder(piege,nb_femelles_jours, FUN = median,na.rm = TRUE), y = nb_femelles_jours)) +
+saussan2 %>%
+  group_by(piege) %>%
+  mutate(count=n()) %>%
+  ggplot(aes(x = reorder(piege,nb_femelles_jours, FUN = median,na.rm = TRUE), y = nb_femelles_jours)) +
   geom_boxplot() +
+  geom_label(aes(label= count , y = 30), size = 4, position = position_dodge(width = 0.75)) +
   ggtitle("abundance per trap") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+
+saussan2 %>%
+  ggplot(aes(x = week, y = nb_femelles_jours)) +
+  geom_line() +
+  facet_wrap(.~piege)
 
 library(MASS)
 library(dplyr)
@@ -72,8 +80,12 @@ saussan_fabregues_pignan2 = saussan_fabregues_pignan %>%
   filter(!is.na(nb_femelles_jours)) %>%
   filter(trap_code != "BG PI 12")
 
-ggplot(saussan_fabregues_pignan2,aes(x = reorder(trap_code,nb_femelles_jours, FUN = median,na.rm = TRUE), y = nb_femelles_jours)) +
+saussan_fabregues_pignan2 %>%
+  group_by(trap_code) %>%
+  mutate(count = n()) %>%
+  ggplot(aes(x = reorder(trap_code,nb_femelles_jours, FUN = median,na.rm = TRUE), y = nb_femelles_jours)) +
   geom_boxplot() +
+  geom_label(aes(label= count , y = 20), size = 3, position = position_dodge(width = 0.75)) +
   ggtitle("abundance per trap") +
   facet_wrap(.~site, scale = "free_x") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -97,8 +109,12 @@ df_vectrap <- df_vectrap %>%
   filter(modality=="C", species == "Aedes albopictus") %>%
   filter(blocks %in% c(1,4,6,7))
 
-ggplot(df_vectrap,aes(x = reorder(trap_code,nb_femelles_jour, FUN = median,na.rm = TRUE), y = nb_femelles_jour)) +
+df_vectrap %>%
+  group_by(trap_code) %>%
+  mutate(count = n()) %>%
+  ggplot(aes(x = reorder(trap_code,nb_femelles_jour, FUN = median,na.rm = TRUE), y = nb_femelles_jour)) +
   geom_boxplot() +
+  geom_label(aes(label= count , y = 50), size = 3, position = position_dodge(width = 0.75)) +
   ggtitle("abundance per trap") +
   facet_wrap(Site~., scales= "free") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -106,7 +122,7 @@ ggplot(df_vectrap,aes(x = reorder(trap_code,nb_femelles_jour, FUN = median,na.rm
 df_vectrap %>%
   group_by(week,Site,Year) %>%
   summarise(nb_femelles_jours=mean(nb_femelles_jour, na.rm = T)) %>%
-  ggplot(aes(x=week, y = nb_femelles_jours, color = Site, group = Site)) + geom_line() + facet_wrap(.~Year)
+  ggplot(aes(x=week,y = nb_femelles_jours, color = Site, group = Site)) + geom_line() + facet_wrap(.~Year)
 
 ## these colombine
 

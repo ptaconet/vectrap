@@ -1,45 +1,101 @@
 ########################### Opening packages
 
-library(tidyverse) ## Version ‘2.0.0’
-library(purrr)  ## Version ‘1.0.1’
-library(patchwork) ## Version ‘1.2.0.9000’
-library(landscapemetrics) ## Version ‘2.1.4’
+library(tidyverse)
+library(purrr)
+library(patchwork)
+library(landscapemetrics)
 
-source("03_Analysis/modelling_adults/functions.R") #### Need of functiosn which allow the interpretation of
+#source("functions.R")
+
+#rf_univ <- read.csv("rf_univ_results.csv")
+rf_univ <- read.csv("rf_univ_results_method1.csv")
+
+rf_univ <- rf_univ %>%
+  mutate(spatialscale = word(rf_univ$predictor, 1, sep = "_")) %>%
+  mutate(predictor = sub(".*?_", "", predictor))
 
 ###########################
 #########'landscape metrics with different buffers
 ###########################
 
-landcover_grouped_veget_data_dict <- read.csv("02_Data/processed_data/03_Landcover_Data/landcover_grouped_veget_data_dic.csv", stringsAsFactors = F) %>% mutate(lc_source = "LCG")
-data_dic <- read.csv("02_Data/processed_data/01_Adults_Abundance/data_dictionary.csv", stringsAsFactors = F)
+lsm_data_dic_NG <- read.csv("landcover_ungrouped_veget_data_dic.csv", stringsAsFactors = F)
+lsm_data_dic_G <- read.csv("landcover_grouped_veget_data_dic.csv", stringsAsFactors = F)
 
-lsm_data_dic <- landcover_grouped_veget_data_dict ## to create data dictionnary for landscape metrics to interprate different class
-mutate(class = as.character(class))
+lsm_data_dic <- rbind(lsm_data_dic_NG,lsm_data_dic_G) %>%
+  mutate(class = as.character(class)) %>%
+  mutate(class_group = ifelse(class %in% c(1,2,3), "Land cover - other classes", "Land cover - vegetation")) %>%
+  distinct()
 
 
-univ_glmm_lsm <- glmm_univ_presence %>%
-  bind_rows(glmm_univ_abundance) %>%
-  filter(grepl("lsm",term)) %>% ## to put together presence and abundance models
-  filter(grepl("np|te|c_area_mn|pland|shdi",term)) %>%
-  mutate(function_name = sub("\\_L.*", "", term), lc_source = word(term, -3, sep = "_"), buffer = word(term, -2, sep = "_"), class = word(term, -1, sep = "_")) %>%
-  mutate(buffer = forcats::fct_relevel(buffer, c("0","20","50","100","250"))) %>%## different buffer : 20 m, 50 m, 100 and 250 m
+rf_univ_lsm <- rf_univ %>%
+  filter(grepl("lsm",predictor)) %>%
+  mutate(function_name = ifelse(spatialscale == "buffer", sub("^(.*)_([^_]+_[^_]+_[^_]+)$", "\\1", predictor),sub("^(.*)_([^_]+_[^_]+)$", "\\1", predictor)),
+         lc_source = ifelse(spatialscale == "buffer", word(predictor, -3, sep = "_"),word(predictor, -2, sep = "_")),
+         buffer = ifelse(spatialscale == "buffer",word(predictor, -2, sep = "_"),spatialscale),
+         class = word(predictor, -1, sep = "_")) %>%
+  mutate(buffer = forcats::fct_relevel(buffer, c("5","10","parcel","20","50","100","bloc","250","500"))) %>%
   left_join(list_lsm()) %>%
   left_join(lsm_data_dic) %>% ## to join the landscape metrics interpretation
-  rename(correlation = estimate) %>%
-  mutate(label = ifelse(level=="landscape","landscape",label)) %>%
-  mutate(label = paste0(label, " - ", metric," - ",name)) %>%
-  mutate(type=ifelse(grepl("Vegetation", label), "Vegetation variables", "Land cover variables"))%>%
-  nest(-lc_source)
-
-plots_univ_glmm_spatial <- univ_glmm_lsm %>%
-  #mutate(univ_spatial = pmap(list(data,lc_source,type), ~fun_plot_tile_univ_spatial(correlation_df = ..1, metric_name = "glmm", indicator = ..1$indicator, lc_source = ..2, type = ..3))) %>%
-  mutate(univ_spatial = pmap(list(data,lc_source), ~fun_plot_tile_univ_spatial_r2(correlation_df = ..1, metric_name = "glmm", indicator = ..1$indicator, lc_source = ..2, type = "", xlabel = "buffer radius around the collection site (meters)"))) %>%
-  dplyr::select(-data)
+  mutate(label = paste0(class_label, " - ", name)) %>%
+  mutate(name = forcats::fct_relevel(name, c("shannon's diversity index","total edge", "total (class) area", "percentage of landscape", "patch area", "edge density", "patch cohesion index", "number of patches","clumpiness index" , "connectance")))
 
 
-plots_univ_glmm_spatial <- univ_glmm_lsm %>%
-  mutate(univ_spatial = pmap(list(data,lc_source), ~fun_plot_tile_univ_spatial_r2(correlation_df = ..1, metric_name = "glmm", indicator = ..1$indicator, lc_source = ..2, type = "", xlabel = "buffer radius around the collection site (meters)"))) %>% ## to use the function to interprate graphically the GLMMs
-  dplyr::select(-data)
 
-pmap(list(plots_univ_glmm_spatial$lc_source,plots_univ_glmm_spatial$univ_spatial),~ggsave(filename = paste0("02_Data/processed_data/",..1,".pdf"),plot = ..2, device = "pdf", width = 7,height = 14)) ## to save
+ggplot(rf_univ_lsm, aes(buffer, name)) +
+  geom_tile(aes(fill = rmse_diff_null_model), color = "white") +
+  facet_grid(class_label~type, scales="free", space="free") +
+  scale_fill_gradient(low = "#FEE0D2",high = "#DE2D26")
+
+
+
+
+rf_univ_height <- rf_univ %>%
+  filter(grepl("height",predictor)) %>%
+  mutate(buffer = ifelse(spatialscale == "buffer",word(predictor, -1, sep = "_"),spatialscale),
+         class = ifelse(spatialscale == "buffer",word(predictor, -2, sep = "_"),word(predictor, -1, sep = "_"))) %>%
+  mutate(buffer = forcats::fct_relevel(buffer, c("5","10","parcel","20","50","100","bloc","250","500"))) %>%
+  mutate(class_group = ifelse(grepl("vegetation",predictor),"Vegetation","Bati")) %>%
+  mutate(label = paste0("Hauteur ",class_group, " - ",class))
+
+ggplot(rf_univ_height, aes(buffer, label)) +
+  geom_tile(aes(fill = imp_mean), color = "white") +
+  facet_grid(class_group~., scales="free_y", space="free_y")
+
+
+
+rf_univ_fil <- rf_univ %>%
+  filter(grepl("FIL",predictor))
+
+
+
+rf_univ_pop <- rf_univ %>%
+  filter(grepl("POP",predictor)) %>%
+  mutate(buffer = ifelse(spatialscale == "buffer",word(predictor, 2, sep = "_"),spatialscale))
+
+
+
+rf_univ_plaques <- rf_univ %>%
+  filter(grepl("PLAQUES",predictor)) %>%
+  mutate(buffer = ifelse(spatialscale == "buffer",word(predictor, 1, sep = "_"),spatialscale), class = word(predictor, -1, sep = "_")) %>%
+  mutate(buffer = forcats::fct_relevel(buffer, c("5","10","parcel","20","50","100","bloc","250","500")))
+
+ggplot(rf_univ_plaques, aes(buffer, class)) +
+  geom_tile(aes(fill = rmse_diff_null_model), color = "white") +
+  #facet_grid(class_group~., scales="free_y", space="free_y")+
+  scale_fill_continuous(type = "viridis")
+
+
+
+
+# rf_univ_texture <- rf_univ %>%
+#   filter(grepl("texture",predictor)) %>%
+#   mutate(buffer = ifelse(spatialscale == "buffer",word(predictor, -1, sep = "_"),spatialscale),
+#          label = ifelse(spatialscale == "buffer",word(predictor, -2, sep = "_"),word(predictor, -1, sep = "_"))) %>%
+#   mutate(buffer = forcats::fct_relevel(buffer, c("5","10","parcel","20","50","100","bloc","250","500"))) %>%
+#   mutate(label = paste0("textures - ", label))
+#
+#
+# ggplot(rf_univ_texture, aes(buffer, label)) +
+#   geom_tile(aes(fill = imp_mean), color = "white") +
+#   scale_fill_continuous(type = "viridis")
+
