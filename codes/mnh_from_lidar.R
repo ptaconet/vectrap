@@ -24,6 +24,7 @@ for (url in urls) {
 
   terra::writeRaster(mnh,paste0("/home/ptaconet/contributions_diverses_projets_mivegec/vectrap/data/lidar_hd/mnh_25cm/",gsub(".copc.laz",".tif",filename)),overwrite=TRUE)
 
+  rm(destfile)
 }
 
 
